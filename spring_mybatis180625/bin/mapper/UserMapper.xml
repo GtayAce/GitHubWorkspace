@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ssm.mapper.UserMapper">
+
+	<!-- 根据id获取用户信息 -->
+	<select id="findUserById" parameterType="int" resultType="user">
+		select * from user where id = #{id}
+	</select>
+	
+	<!-- 根据用户名关键字获取用户信息 -->
+    <select id="fingUserByUsername" parameterType="string" resultType="user">
+    	select * from user where username like #{username}
+    </select>
+	
+	<!-- 根据用户名关键字和性别获取用户信息 -->
+	<select id="fingUserByUsernameAndSex" parameterType="user" resultType="user">
+    	select * from user 
+    	<where> 
+    		<if test="username!='' and username!=null">
+    			and username like #{username}
+    		</if>
+    		<if test="sex!='' and sex!=null">
+    			and sex = #{sex}
+    		</if>
+    	</where>  
+    </select>
+    
+    <!-- 查询指定id的用户信息 -->
+    <select id="findUserByIdList" parameterType="java.util.List" resultType="user">
+	    SELECT * FROM `user`
+		WHERE 1=1
+		<foreach collection="list" open="and id in (" item="item" close=")" separator=",">
+			#{item}
+		</foreach>
+    </select>
+    
+    <resultMap type="user" id="user_id_username_sex_addressMap">
+		<id column="id_" property="id" />
+		<result column="username_" property="username" />
+		<result column="sex_" property="sex" />
+		<result column="address_" property="address" />
+	</resultMap>
+    
+     <!-- 查询指定id的用户的id姓名性别地址 -->
+    <select id="findUserByIdListResultMap" parameterType="java.util.List" 
+    		resultMap="user_id_username_sex_addressMap">
+	    SELECT
+	    	 id id_, username username_, sex sex_, address address_
+	    FROM
+	    	`user`
+		WHERE 1=1
+		<if test="list.size>0 and list!=null">
+			<foreach collection="list" open="and id in (" item="item" close=")" separator=",">
+				#{item}
+			</foreach>
+		</if>
+    </select>
+    
+    <resultMap type="user" id="findUserOrdersResultMap">
+		<id column="user_id" property="id" />
+		<result column="username" property="username" />
+		<result column="sex" property="sex" />
+		<result column="address" property="address" />
+		<collection property="orderList" ofType="ssm.po.Orders">
+			<id column="order_id" property="id"/>
+			<result column="order_number" property="number" />
+			<result column="order_note" property="note" />
+			<result column="order_createtime" property="createtime" />
+		</collection>
+	</resultMap>
+    
+    <!-- 查询指定id用户的购物清单 -->
+    <select id="findUserOrdersResultMap" parameterType="java.util.List" 
+    		resultMap="findUserOrdersResultMap">
+	    SELECT
+			user.id user_id,
+			user.username,
+			user.sex,
+			user.address,
+			orders.id order_id,
+			orders.number order_number,
+			orders.note order_note,
+			orders.createtime order_createtime
+		FROM
+			orders,user
+		WHERE 1=1
+			and orders.user_id = user.id
+			<!-- <if test="">中test的判断的只能是parameterType传入的数据 -->
+			<if test="list!=null and list.size>0">
+				<foreach collection="list" open="and user.id in (" item="item" separator="," close=")" >
+					#{item}
+				</foreach>
+			</if>
+	</select>
+	
+	<!-- resultMap 参数意思
+		type: 最终映射的java对象
+		id: resultType的唯一标识
+	 -->
+	<resultMap id="AllUserShoppingInventoryResultMap" type="user">
+		<id column="user_id" property="id" />
+		<result column="user_name" property="username" />
+		<result column="sex" property="sex"/>
+		<result column="user_address" property="address" />
+		
+		<!-- <collection>中的property指向的时该层的接受的list类型的属性名称 -->
+		<collection property="orderList" ofType="ssm.po.Orders" >
+			<result column="order_number" property="number" />
+			<result column="order_createtime" property="createtime" />
+			<result column="order_note" property="note" />
+			
+			<collection property="orderDetails" ofType="ssm.po.OrderDetail" >
+				<result column="item_num" property="item_num" />
+				
+				<association property="item" javaType="ssm.po.Items" >
+					<result column="item_name" property="name" />
+					<result column="item_price" property="price" />
+					<result column="item_detail" property="detail" />
+				</association>
+			</collection>
+		</collection>
+	</resultMap>
+	
+	<!-- 查询所有用户的购物明细 -->
+	<select id="findAllUserShoppingInventory" resultMap="AllUserShoppingInventoryResultMap">
+		SELECT
+			user.id user_id,
+			user.username user_name,
+			user.sex,
+			user.address user_address,
+			orders.number order_number,
+			orders.createtime order_createtime,
+			orders.note order_note,
+			items.name item_name,
+			items.price item_price,
+			orderdetail.item_num,
+			items.detail item_detail
+		FROM
+			user,orders,orderdetail,items
+		WHERE
+			orders.user_id=user.id AND orderdetail.orders_id = orders.id AND orderdetail.item_id = items.id
+	</select>
+
+
+
+
+
+
+
+
+
+</mapper>
